@@ -5,23 +5,55 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
-const NICHE_CONTEXT = {
+const NICHE_CONTEXT: Record<string, { label: string; pain_points: string[]; offers: string[]; ctas: string[] }> = {
   real_estate: {
+    label: 'real estate',
     pain_points: ['finding qualified buyers', 'standing out in competitive markets', 'generating seller leads', 'showcasing listings'],
     offers: ['free home valuation', 'cash offer in 24 hours', 'sell in 30 days guaranteed', 'zero commission options'],
     ctas: ['Get Your Free Home Valuation', 'See Homes in Your Budget', 'Book a Showing', 'Get a Cash Offer Today'],
   },
   law: {
+    label: 'legal services',
     pain_points: ['finding affordable legal help', 'understanding rights', 'navigating complex cases', 'time-sensitive legal issues'],
     offers: ['free consultation', 'no win no fee', '24/7 availability', 'same-day appointments'],
     ctas: ['Book a Free Consultation', 'Speak to a Lawyer Today', 'Get Legal Help Now', 'Claim Your Free Case Review'],
+  },
+  home_services: {
+    label: 'home services',
+    pain_points: ['finding reliable contractors', 'emergency repairs', 'getting fair pricing', 'trusting strangers in your home'],
+    offers: ['free estimate', '$50 off first service', 'same-day service', 'senior discount'],
+    ctas: ['Get a Free Estimate', 'Book Same-Day Service', 'Call Now for Emergency Repair', 'Claim Your $50 Discount'],
+  },
+  medical_dental: {
+    label: 'medical & dental',
+    pain_points: ['finding a new dentist', 'cost of cosmetic procedures', 'fear of dental visits', 'long wait times'],
+    offers: ['free consultation', 'new patient special', '$99 teeth whitening', 'complimentary skin assessment'],
+    ctas: ['Book Your Free Consultation', 'Claim New Patient Special', 'Schedule Your Visit', 'Get a Free Assessment'],
+  },
+  local_services: {
+    label: 'local services',
+    pain_points: ['finding quality local providers', 'inconsistent service', 'booking convenience', 'first-time trust'],
+    offers: ['first visit discount', 'free trial class', 'refer a friend bonus', 'membership deals'],
+    ctas: ['Book Your First Visit', 'Claim Your Free Trial', 'Get 20% Off Today', 'Reserve Your Spot'],
+  },
+  automotive: {
+    label: 'automotive',
+    pain_points: ['finding trustworthy mechanics', 'unexpected repair costs', 'keeping vehicles maintained', 'fair pricing'],
+    offers: ['free inspection', 'oil change special', 'brake check included', 'price match guarantee'],
+    ctas: ['Book a Free Inspection', 'Get Your Oil Change Deal', 'Schedule Service Today', 'Get a Quote Now'],
+  },
+  wedding: {
+    label: 'wedding services',
+    pain_points: ['staying within budget', 'finding available vendors', 'coordinating multiple services', 'quality assurance'],
+    offers: ['free consultation', 'package deals', 'early booking discount', 'complimentary engagement session'],
+    ctas: ['Book a Free Consultation', 'See Our Packages', 'Check Availability', 'View Our Portfolio'],
   },
 }
 
 export async function generateAdCopy(req: GenerateAdRequest): Promise<GenerateAdResponse> {
   const context = NICHE_CONTEXT[req.niche]
 
-  const prompt = `You are an expert direct-response copywriter specializing in ${req.niche === 'real_estate' ? 'real estate' : 'legal services'} ads.
+  const prompt = `You are an expert direct-response copywriter specializing in ${context.label} ads.
 
 Business: ${req.business_name}
 Location: ${req.location}
@@ -68,14 +100,15 @@ Focus on: urgency, specificity, local relevance, clear value proposition. No flu
 }
 
 export async function generateOutreachMessage(
-  niche: 'real_estate' | 'law',
+  niche: string,
   businessName: string,
   recipientName?: string
 ): Promise<string> {
-  const prompt = `Write a short, genuine Instagram DM for a ${niche === 'real_estate' ? 'real estate' : 'legal'} marketing agency pitching their AI-powered ad service.
+  const context = NICHE_CONTEXT[niche] || NICHE_CONTEXT.home_services
+  const prompt = `Write a short, genuine Instagram DM for a ${context.label} marketing agency pitching their AI-powered ad service.
 
 Agency: AdFlow AI
-Target: ${recipientName ? recipientName : 'a local ' + (niche === 'real_estate' ? 'real estate agent' : 'law firm')}
+Target: ${recipientName ? recipientName : 'a local ' + context.label + ' business'}
 
 Requirements:
 - Under 150 words

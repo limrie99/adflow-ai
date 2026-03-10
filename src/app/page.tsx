@@ -28,11 +28,11 @@ export default function Home() {
         <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-6">
           Ads that run themselves.
           <br />
-          <span className="text-white/40">Built for agents and firms.</span>
+          <span className="text-white/40">Built for local businesses.</span>
         </h1>
         <p className="text-lg text-white/60 max-w-2xl mx-auto mb-10">
-          AdFlow AI generates, deploys, and optimizes Meta and Google ads for real estate agents
-          and law firms — powered by Claude. Pay only for what you use.
+          AdFlow AI generates, deploys, and optimizes Meta and Google ads for home services,
+          dental clinics, real estate, law firms, and more — powered by Claude. Pay only for what you use.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
@@ -63,7 +63,7 @@ export default function Home() {
             {
               step: '02',
               title: 'AI writes your ads',
-              desc: 'Claude generates high-converting copy tailored to real estate or law.',
+              desc: 'Claude generates high-converting copy tailored to your niche.',
             },
             {
               step: '03',

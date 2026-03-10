@@ -3,7 +3,7 @@ create table businesses (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users not null,
   name text not null,
-  niche text not null check (niche in ('real_estate', 'law')),
+  niche text not null check (niche in ('real_estate', 'law', 'home_services', 'medical_dental', 'local_services', 'automotive', 'wedding')),
   location text not null,
   website text,
   phone text,

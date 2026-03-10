@@ -1,4 +1,4 @@
-export type Niche = 'real_estate' | 'law'
+export type Niche = 'real_estate' | 'law' | 'home_services' | 'medical_dental' | 'local_services' | 'automotive' | 'wedding'
 
 export type AdPlatform = 'meta' | 'google'
 

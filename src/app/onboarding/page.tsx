@@ -11,14 +11,14 @@ export default function Onboarding() {
   const [step, setStep] = useState<Step>('niche')
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
-    niche: '' as 'real_estate' | 'law' | '',
+    niche: '' as string,
     business_name: '',
     location: '',
     website: '',
     phone: '',
   })
 
-  const handleNicheSelect = (niche: 'real_estate' | 'law') => {
+  const handleNicheSelect = (niche: string) => {
     setForm((f) => ({ ...f, niche }))
     setStep('details')
   }
@@ -75,25 +75,19 @@ export default function Onboarding() {
             <p className="text-white/50 mb-8">We'll tailor your ads and outreach to your niche.</p>
             <div className="grid grid-cols-2 gap-4">
               {[
-                {
-                  value: 'real_estate' as const,
-                  label: 'Real Estate',
-                  desc: 'Agents, brokers, property managers',
-                  icon: '🏠',
-                },
-                {
-                  value: 'law' as const,
-                  label: 'Law Firm',
-                  desc: 'Attorneys, legal practices',
-                  icon: '⚖️',
-                },
+                { value: 'home_services', label: 'Home Services', desc: 'Plumbers, roofers, HVAC, electricians' },
+                { value: 'medical_dental', label: 'Medical & Dental', desc: 'Dentists, med spas, chiropractors' },
+                { value: 'real_estate', label: 'Real Estate', desc: 'Agents, brokers, property managers' },
+                { value: 'law', label: 'Legal', desc: 'Personal injury, divorce, immigration' },
+                { value: 'local_services', label: 'Local Services', desc: 'Salons, gyms, massage studios' },
+                { value: 'automotive', label: 'Automotive', desc: 'Auto repair, dealerships, detailing' },
+                { value: 'wedding', label: 'Wedding', desc: 'Photographers, venues, planners' },
               ].map((n) => (
                 <button
                   key={n.value}
                   onClick={() => handleNicheSelect(n.value)}
                   className="border border-white/20 rounded-xl p-6 text-left hover:border-white/60 hover:bg-white/5 transition-all"
                 >
-                  <div className="text-3xl mb-3">{n.icon}</div>
                   <div className="font-semibold mb-1">{n.label}</div>
                   <div className="text-white/40 text-sm">{n.desc}</div>
                 </button>
