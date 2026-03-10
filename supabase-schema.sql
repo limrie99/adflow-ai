@@ -97,7 +97,27 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure handle_new_user();
 
+-- Website monitors (auto-monitoring)
+create table website_monitors (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null,
+  business_name text not null,
+  website_url text not null,
+  niche text not null,
+  location text not null,
+  platform text not null default 'meta' check (platform in ('meta', 'google')),
+  check_interval_hours integer not null default 1,
+  is_active boolean not null default true,
+  last_checked_at timestamptz,
+  last_snapshot text,
+  created_at timestamptz default now()
+);
+alter table website_monitors enable row level security;
+create policy "Users own their monitors" on website_monitors
+  for all using (auth.uid() = user_id);
+
 -- Indexes
 create index on campaigns (user_id, created_at desc);
 create index on leads (user_id, created_at desc);
 create index on usage_records (user_id, created_at desc);
+create index on website_monitors (user_id, is_active);
