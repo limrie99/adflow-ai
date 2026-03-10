@@ -48,6 +48,7 @@ export default function Dashboard() {
       <nav className="flex items-center justify-between px-8 py-5 border-b border-white/10">
         <span className="text-lg font-bold">AdFlow AI</span>
         <div className="flex items-center gap-6">
+          <Link href="/agency" className="text-white/60 hover:text-white text-sm transition-colors">Agency</Link>
           <Link href="/campaigns" className="text-white/60 hover:text-white text-sm transition-colors">Campaigns</Link>
           <Link href="/leads" className="text-white/60 hover:text-white text-sm transition-colors">Leads</Link>
           <div className="w-8 h-8 bg-white/10 rounded-full" />
@@ -83,6 +84,23 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
+
+        {/* Agency Mode CTA */}
+        <Link
+          href="/agency"
+          className="block border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl p-6 mb-6 hover:border-purple-500/50 transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg font-semibold">Agency Mode</span>
+                <span className="text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white px-2 py-0.5 rounded-full">NEW</span>
+              </div>
+              <div className="text-white/40 text-sm">Paste any client website &rarr; AI scans real data &rarr; generates pro ads &rarr; finds prospects</div>
+            </div>
+            <div className="text-white/30 text-2xl">&rarr;</div>
+          </div>
+        </Link>
 
         {/* Quick actions */}
         <div className="grid md:grid-cols-2 gap-4 mb-10">
