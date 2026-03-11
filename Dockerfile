@@ -1,15 +1,9 @@
-FROM node:20-slim AS builder
+FROM node:20-slim
 WORKDIR /app
 
-# Increase memory for Next.js build
 ENV NODE_OPTIONS="--max_old_space_size=2048"
+ENV NEXT_TELEMETRY_DISABLED=1
 
-COPY package*.json ./
-RUN npm ci --ignore-scripts
-
-COPY . .
-
-# Pass NEXT_PUBLIC vars at build time
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_WHOP_APP_ID
@@ -22,18 +16,15 @@ ENV NEXT_PUBLIC_WHOP_APP_ID=$NEXT_PUBLIC_WHOP_APP_ID
 ENV NEXT_PUBLIC_WHOP_CHECKOUT_URL=$NEXT_PUBLIC_WHOP_CHECKOUT_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
-RUN npm run build
+COPY package*.json ./
+RUN npm ci
 
-FROM node:20-slim AS runner
-WORKDIR /app
+COPY . .
+RUN chmod +x build.sh && sh build.sh
 
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["node", ".next/standalone/server.js"]
