@@ -195,6 +195,8 @@ export default function AgencyPage() {
         <div className="flex items-center gap-3">
           <Link href="/agency/brand" className="text-xs text-white/50 hover:text-white transition-colors">Brand Guide</Link>
           <Link href="/agency/spy" className="text-xs text-white/50 hover:text-white transition-colors">Ad Spy</Link>
+          <Link href="/agency/top-ads" className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors font-semibold">🏆 Top Ads</Link>
+          <Link href="/agency/playbook" className="text-xs text-white/50 hover:text-white transition-colors">Playbook</Link>
           <Link href="/agency/monitors" className="text-xs text-white/50 hover:text-white transition-colors">Monitors</Link>
           <span className="text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1 rounded-full font-medium">
             Agency Mode
@@ -606,6 +608,33 @@ export default function AgencyPage() {
                 className="flex-1 border border-white/20 py-3 rounded-lg text-white/60 hover:text-white transition-colors"
               >
                 Scan another website
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession()
+                    if (!session) return
+                    const res = await fetch('/api/prospects/export', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${session.access_token}`,
+                      },
+                      body: JSON.stringify({ prospects }),
+                    })
+                    if (!res.ok) throw new Error('Export failed')
+                    const blob = await res.blob()
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = `prospects-${Date.now()}.xlsx`
+                    a.click()
+                    URL.revokeObjectURL(url)
+                  } catch { setError('Excel export failed') }
+                }}
+                className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-500 transition-colors"
+              >
+                📥 Export to Excel
               </button>
               <Link
                 href="/dashboard"

@@ -37,10 +37,24 @@ export interface AdLibraryResult {
 export async function scrapeAdLibrary(
   niche: string,
   location: string,
-  competitors?: string[]
+  competitors?: string[],
+  realAdContext?: string
 ): Promise<AdLibraryResult> {
-  // Step 1: Fetch real ads from Meta Ad Library API
-  const realAds = await fetchMetaAdLibrary(niche, location, competitors)
+  // Step 1: Try to get real ads (from passed context, or from Meta API)
+  let adDataSection = ''
+
+  if (realAdContext && realAdContext.length > 100) {
+    // Real ads passed in from scraped_ads database
+    adDataSection = `Here are REAL ads currently running in the Meta Ad Library. Analyze ONLY these real ads:\n\n${realAdContext}`
+  } else {
+    // Try Meta API directly
+    const realAds = await fetchMetaAdLibrary(niche, location, competitors)
+    if (realAds.length > 0) {
+      adDataSection = `Here are real ads scraped from the Meta Ad Library:\n${JSON.stringify(realAds, null, 2)}`
+    } else {
+      adDataSection = `No live ads could be fetched from the API. Use your deep knowledge of current ${niche} advertising trends to create a realistic competitive analysis.`
+    }
+  }
 
   // Step 2: Analyze with Claude
   const message = await client.messages.create({
@@ -49,9 +63,9 @@ export async function scrapeAdLibrary(
     messages: [
       {
         role: 'user',
-        content: `You are a world-class paid media analyst. Analyze the competitive ad landscape for ${niche} businesses in ${location}.
+        content: `You are a world-class paid media analyst. Analyze the competitive ad landscape for ${niche} businesses${location ? ` in ${location}` : ''}.
 
-${realAds.length > 0 ? `Here are real ads scraped from the Meta Ad Library:\n${JSON.stringify(realAds, null, 2)}` : `No live ads could be fetched from the API. Use your deep knowledge of current ${niche} advertising trends.`}
+${adDataSection}
 
 ${competitors?.length ? `Key competitors to focus on: ${competitors.join(', ')}` : ''}
 
@@ -59,7 +73,7 @@ Create a comprehensive competitive intelligence report. Analyze at least 15-20 a
 
 Return JSON:
 {
-  "ads_found": ${realAds.length || 20},
+  "ads_found": 20,
   "competitor_ads": [
     {
       "advertiser": "business name",

@@ -121,3 +121,53 @@ create index on campaigns (user_id, created_at desc);
 create index on leads (user_id, created_at desc);
 create index on usage_records (user_id, created_at desc);
 create index on website_monitors (user_id, is_active);
+
+-- Scraped ads from Meta Ad Library
+create table scraped_ads (
+  id uuid primary key default gen_random_uuid(),
+  external_id text,
+  advertiser_name text not null,
+  niche text not null,
+  location_query text not null,
+  country_code text default 'US',
+  headline text,
+  body_text text,
+  cta text,
+  platforms text[] default '{}',
+  media_type text,
+  ad_delivery_start date,
+  ad_delivery_stop date,
+  is_active boolean default true,
+  spend_lower integer,
+  spend_upper integer,
+  impressions_lower integer,
+  impressions_upper integer,
+  performance_score numeric(5,2),
+  raw_data jsonb default '{}',
+  source text default 'api',
+  scraped_at timestamptz default now(),
+  week_of date,
+  created_at timestamptz default now()
+);
+
+alter table scraped_ads enable row level security;
+create policy "Service role full access to scraped_ads" on scraped_ads for all using (true);
+create index idx_scraped_ads_niche_week on scraped_ads(niche, week_of desc);
+create index idx_scraped_ads_performance on scraped_ads(niche, performance_score desc nulls last);
+
+-- Scrape run tracking
+create table scrape_runs (
+  id uuid primary key default gen_random_uuid(),
+  niche text not null,
+  location text not null,
+  status text default 'pending',
+  ads_found integer default 0,
+  ads_new integer default 0,
+  error_message text,
+  started_at timestamptz,
+  completed_at timestamptz,
+  created_at timestamptz default now()
+);
+
+alter table scrape_runs enable row level security;
+create policy "Service role full access to scrape_runs" on scrape_runs for all using (true);
