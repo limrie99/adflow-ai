@@ -23,30 +23,81 @@ export default function Login() {
     setSuccess('')
 
     if (mode === 'signup') {
-      const { error } = await supabase.auth.signUp({ email, password })
+      const { data, error } = await supabase.auth.signUp({ email, password })
       if (error) {
         setError(error.message)
-      } else {
-        setSuccess('Check your email to confirm your account.')
+        setLoading(false)
+        return
       }
+
+      // Auto-confirmed signup (ENABLE_EMAIL_AUTOCONFIRM=true)
+      if (data.session) {
+        // Set token cookie
+        document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}`
+
+        // Check role (handle_new_user trigger assigns role automatically)
+        await routeByRole(data.session.access_token)
+        return
+      }
+
+      setSuccess('Account created! You can now sign in.')
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
         setError(error.message)
+        setLoading(false)
+        return
+      }
+
+      // Set token cookie
+      document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}`
+
+      // Route based on role
+      await routeByRole(data.session.access_token)
+      return
+    }
+
+    setLoading(false)
+  }
+
+  const routeByRole = async (token: string) => {
+    try {
+      // Get user
+      const { data: { user } } = await supabase.auth.getUser(token)
+      if (!user) {
+        router.push('/dashboard')
+        return
+      }
+
+      // Check user role
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+
+      const role = roleData?.role || 'saas_user'
+
+      // Set role cookie for middleware
+      document.cookie = `user-role=${role}; path=/; max-age=${60 * 60 * 24 * 7}`
+
+      if (role === 'admin') {
+        router.push('/admin')
+      } else if (role === 'client') {
+        router.push('/client')
       } else {
-        // Check if business exists
-        const { data: { user } } = await supabase.auth.getUser()
+        // saas_user — check if they have a business (onboarding)
         const { data: business } = await supabase
           .from('businesses')
           .select('id')
-          .eq('user_id', user!.id)
+          .eq('user_id', user.id)
           .single()
 
         router.push(business ? '/dashboard' : '/onboarding')
       }
+    } catch {
+      router.push('/dashboard')
     }
-
-    setLoading(false)
   }
 
   return (
@@ -127,6 +178,10 @@ export default function Login() {
           {mode === 'login' && (
             <button
               onClick={async () => {
+                if (!email) {
+                  setError('Enter your email first')
+                  return
+                }
                 setLoading(true)
                 await supabase.auth.resetPasswordForEmail(email)
                 setSuccess('Password reset email sent.')

@@ -171,3 +171,124 @@ create table scrape_runs (
 
 alter table scrape_runs enable row level security;
 create policy "Service role full access to scrape_runs" on scrape_runs for all using (true);
+
+-- =============================================
+-- AGENCY CLIENT PORTAL TABLES
+-- =============================================
+
+-- User roles (admin vs client vs saas_user)
+create table user_roles (
+  user_id uuid primary key references auth.users(id),
+  role text not null default 'client' check (role in ('admin', 'client', 'saas_user')),
+  created_at timestamptz default now()
+);
+alter table user_roles enable row level security;
+create policy "Users can read their own role" on user_roles for select using (auth.uid() = user_id);
+create policy "Service role full access to user_roles" on user_roles for all using (true);
+
+-- Agency clients (businesses the admin manages)
+create table agency_clients (
+  id uuid primary key default gen_random_uuid(),
+  admin_user_id uuid references auth.users(id) not null,
+  client_user_id uuid references auth.users(id),
+  business_name text not null,
+  contact_name text,
+  contact_email text,
+  contact_phone text,
+  niche text,
+  website text,
+  location text,
+  logo_url text,
+  monthly_ad_budget numeric(10,2),
+  ads_remaining integer default 0,
+  stripe_customer_id text,
+  status text default 'active' check (status in ('active', 'paused', 'churned')),
+  notes text,
+  created_at timestamptz default now()
+);
+alter table agency_clients enable row level security;
+create policy "Admins manage their clients" on agency_clients for all using (auth.uid() = admin_user_id);
+create policy "Clients see their own record" on agency_clients for select using (auth.uid() = client_user_id);
+
+-- Ads created for clients (approval workflow)
+create table client_ads (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid references agency_clients(id) on delete cascade not null,
+  admin_user_id uuid references auth.users(id) not null,
+  title text not null,
+  platform text default 'meta' check (platform in ('meta', 'google')),
+  ad_copy jsonb not null default '{}',
+  targeting jsonb default '{}',
+  budget_daily numeric(10,2),
+  status text default 'draft' check (status in ('draft', 'pending_approval', 'approved', 'rejected', 'live', 'paused', 'completed')),
+  client_feedback text,
+  approved_at timestamptz,
+  rejected_at timestamptz,
+  scheduled_for date,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+alter table client_ads enable row level security;
+create policy "Admins manage ads they created" on client_ads for all using (auth.uid() = admin_user_id);
+create policy "Clients see their ads" on client_ads for select using (
+  client_id in (select id from agency_clients where client_user_id = auth.uid())
+);
+create policy "Clients can update their ads" on client_ads for update using (
+  client_id in (select id from agency_clients where client_user_id = auth.uid())
+);
+
+-- Ad packages clients can buy
+create table ad_packages (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  ad_count integer not null,
+  price numeric(10,2) not null,
+  stripe_price_id text,
+  is_active boolean default true,
+  created_at timestamptz default now()
+);
+alter table ad_packages enable row level security;
+create policy "Anyone can read active packages" on ad_packages for select using (is_active = true);
+create policy "Service role full access to ad_packages" on ad_packages for all using (true);
+
+-- Client payments via Stripe
+create table client_payments (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid references agency_clients(id) on delete cascade not null,
+  amount numeric(10,2) not null,
+  description text,
+  status text default 'pending' check (status in ('pending', 'paid', 'failed', 'refunded')),
+  stripe_checkout_session_id text,
+  stripe_payment_intent_id text,
+  created_at timestamptz default now()
+);
+alter table client_payments enable row level security;
+create policy "Service role full access to client_payments" on client_payments for all using (true);
+create policy "Clients see their payments" on client_payments for select using (
+  client_id in (select id from agency_clients where client_user_id = auth.uid())
+);
+
+-- Indexes for agency tables
+create index idx_agency_clients_admin on agency_clients(admin_user_id);
+create index idx_agency_clients_client_user on agency_clients(client_user_id);
+create index idx_client_ads_client on client_ads(client_id, status);
+create index idx_client_ads_admin on client_ads(admin_user_id, created_at desc);
+create index idx_client_payments_client on client_payments(client_id, created_at desc);
+
+-- Update handle_new_user to also assign role
+create or replace function handle_new_user()
+returns trigger language plpgsql security definer as $$
+begin
+  insert into public.user_credits (user_id, credits)
+  values (new.id, 50)
+  on conflict (user_id) do nothing;
+  -- First user gets admin role, everyone else gets client
+  if (select count(*) from public.user_roles) = 0 then
+    insert into public.user_roles (user_id, role) values (new.id, 'admin');
+  else
+    insert into public.user_roles (user_id, role) values (new.id, 'client')
+    on conflict (user_id) do nothing;
+  end if;
+  return new;
+end;
+$$;
