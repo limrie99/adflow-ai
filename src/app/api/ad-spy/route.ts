@@ -4,10 +4,12 @@ import { deductCredits } from '@/lib/usage'
 import { supabase } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
@@ -40,6 +42,7 @@ export async function POST(req: NextRequest) {
       ).join('\n---\n')
     } else {
       // Check for cached scraped ads in database
+      const supabaseAdmin = getSupabaseAdmin()
       const { data: cachedAds } = await supabaseAdmin
         .from('scraped_ads')
         .select('advertiser_name, headline, body_text, cta, platforms, media_type, ad_delivery_start, performance_score, spend_upper')

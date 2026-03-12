@@ -1,15 +1,23 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { fetchAdsFromAPI, getNicheSearchTerms } from './meta-api'
 import { calculatePerformanceScore, getCurrentWeekMonday } from './scoring'
 import { ScrapedAd, ScrapeRunConfig, ScrapeRunResult } from './types'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+let _supabaseAdmin: SupabaseClient | null = null
+
+function getSupabaseAdmin(): SupabaseClient {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  }
+  return _supabaseAdmin
+}
 
 export async function runScrapeJob(config: ScrapeRunConfig): Promise<ScrapeRunResult> {
   // Create scrape run record
+  const supabaseAdmin = getSupabaseAdmin()
   const { data: run } = await supabaseAdmin
     .from('scrape_runs')
     .insert({
@@ -118,6 +126,7 @@ export async function runScrapeJob(config: ScrapeRunConfig): Promise<ScrapeRunRe
 }
 
 export async function getTopAds(niche: string, limit = 20): Promise<Record<string, unknown>[]> {
+  const supabaseAdmin = getSupabaseAdmin()
   const { data } = await supabaseAdmin
     .from('scraped_ads')
     .select('*')
@@ -131,6 +140,7 @@ export async function getTopAds(niche: string, limit = 20): Promise<Record<strin
 }
 
 export async function getTopAdsForWeek(niche: string, weekOf?: string, limit = 20): Promise<Record<string, unknown>[]> {
+  const supabaseAdmin = getSupabaseAdmin()
   const week = weekOf || getCurrentWeekMonday()
   const { data } = await supabaseAdmin
     .from('scraped_ads')
@@ -151,6 +161,7 @@ export async function getTopAdsForWeek(niche: string, weekOf?: string, limit = 2
 }
 
 async function findByExternalId(externalId: string) {
+  const supabaseAdmin = getSupabaseAdmin()
   const { data } = await supabaseAdmin
     .from('scraped_ads')
     .select('id')
@@ -160,6 +171,7 @@ async function findByExternalId(externalId: string) {
 }
 
 async function findByContent(advertiser: string, headline: string, bodyText: string) {
+  const supabaseAdmin = getSupabaseAdmin()
   let query = supabaseAdmin
     .from('scraped_ads')
     .select('id')
@@ -178,6 +190,7 @@ async function updateRunStatus(
   extra: Record<string, unknown> = {}
 ) {
   if (!runId) return
+  const supabaseAdmin = getSupabaseAdmin()
   await supabaseAdmin
     .from('scrape_runs')
     .update({

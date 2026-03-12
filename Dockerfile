@@ -1,8 +1,13 @@
-FROM node:20-slim
+FROM node:20-slim AS builder
 WORKDIR /app
 
 ENV NODE_OPTIONS="--max_old_space_size=2048"
 ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
 
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -16,15 +21,18 @@ ENV NEXT_PUBLIC_WHOP_APP_ID=$NEXT_PUBLIC_WHOP_APP_ID
 ENV NEXT_PUBLIC_WHOP_CHECKOUT_URL=$NEXT_PUBLIC_WHOP_CHECKOUT_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
-COPY package*.json ./
-RUN npm ci
+RUN npm run build
 
-COPY . .
-RUN chmod +x build.sh && sh build.sh
+FROM node:20-slim AS runner
+WORKDIR /app
 
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
 EXPOSE 3000
-CMD ["node", ".next/standalone/server.js"]
+CMD ["node", "server.js"]
