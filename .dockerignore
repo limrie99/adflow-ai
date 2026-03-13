@@ -1,6 +1,7 @@
 .next
 node_modules
 .env*
+!.env.production
 .git
 .gitignore
 README.md
