@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
 interface PlaybookAd {
@@ -157,19 +156,7 @@ function PlaybookContent() {
   const today = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <nav className="flex items-center justify-between px-8 py-5 border-b border-white/10 print:hidden">
-        <Link href="/dashboard" className="text-lg font-bold">AdFlow AI</Link>
-        <div className="flex items-center gap-3">
-          <Link href="/agency" className="text-xs text-white/50 hover:text-white">Workflow</Link>
-          <Link href="/agency/top-ads" className="text-xs text-white/50 hover:text-white">Top Ads</Link>
-          <Link href="/agency/spy" className="text-xs text-white/50 hover:text-white">Ad Spy</Link>
-          <span className="text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1 rounded-full font-medium">
-            📋 Playbook
-          </span>
-        </div>
-      </nav>
-
+    <div>
       {/* Report header — styled like the video */}
       <div className="bg-gradient-to-b from-slate-900 to-black py-16 px-8 text-center border-b border-white/10">
         <p className="text-blue-400 text-xs uppercase tracking-[0.3em] font-semibold mb-4">
@@ -416,7 +403,7 @@ function PlaybookContent() {
 
 export default function PlaybookPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="text-white/40">Loading...</div></div>}>
       <PlaybookContent />
     </Suspense>
   )

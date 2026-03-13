@@ -79,21 +79,7 @@ export default function TopAdsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <nav className="flex items-center justify-between px-8 py-5 border-b border-white/10">
-        <Link href="/dashboard" className="text-lg font-bold">AdFlow AI</Link>
-        <div className="flex items-center gap-3">
-          <Link href="/agency" className="text-xs text-white/50 hover:text-white">Workflow</Link>
-          <Link href="/agency/brand" className="text-xs text-white/50 hover:text-white">Brand Guide</Link>
-          <Link href="/agency/spy" className="text-xs text-white/50 hover:text-white">Ad Spy</Link>
-          <Link href="/agency/playbook" className="text-xs text-white/50 hover:text-white">Playbook</Link>
-          <Link href="/agency/monitors" className="text-xs text-white/50 hover:text-white">Monitors</Link>
-          <span className="text-xs bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-3 py-1 rounded-full font-bold">
-            🏆 Top Ads
-          </span>
-        </div>
-      </nav>
-
+    <div>
       <div className="max-w-6xl mx-auto px-8 py-10">
         <div className="flex items-center justify-between mb-8">
           <div>

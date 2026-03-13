@@ -188,22 +188,7 @@ export default function AgencyPage() {
   const stepIndex = ['scan', 'review', 'strategy', 'ads', 'prospects'].indexOf(step)
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-8 py-5 border-b border-white/10">
-        <Link href="/dashboard" className="text-lg font-bold">AdFlow AI</Link>
-        <div className="flex items-center gap-3">
-          <Link href="/agency/brand" className="text-xs text-white/50 hover:text-white transition-colors">Brand Guide</Link>
-          <Link href="/agency/spy" className="text-xs text-white/50 hover:text-white transition-colors">Ad Spy</Link>
-          <Link href="/agency/top-ads" className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors font-semibold">🏆 Top Ads</Link>
-          <Link href="/agency/playbook" className="text-xs text-white/50 hover:text-white transition-colors">Playbook</Link>
-          <Link href="/agency/monitors" className="text-xs text-white/50 hover:text-white transition-colors">Monitors</Link>
-          <span className="text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1 rounded-full font-medium">
-            Agency Mode
-          </span>
-        </div>
-      </nav>
-
+    <div>
       <div className="max-w-4xl mx-auto px-8 py-10">
         {/* Progress bar */}
         <div className="flex gap-2 mb-8">
@@ -649,3 +634,4 @@ export default function AgencyPage() {
     </div>
   )
 }
+

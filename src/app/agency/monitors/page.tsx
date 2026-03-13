@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
 interface Monitor {
@@ -135,14 +134,7 @@ export default function MonitorsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <nav className="flex items-center justify-between px-8 py-5 border-b border-white/10">
-        <Link href="/agency" className="text-lg font-bold">AdFlow AI</Link>
-        <span className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full font-medium">
-          Auto-Monitor
-        </span>
-      </nav>
-
+    <div>
       <div className="max-w-4xl mx-auto px-8 py-10">
         <div className="flex items-center justify-between mb-8">
           <div>

@@ -82,14 +82,7 @@ export default function BrandGuidePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <nav className="flex items-center justify-between px-8 py-5 border-b border-white/10">
-        <Link href="/agency" className="text-lg font-bold">AdFlow AI</Link>
-        <span className="text-xs bg-gradient-to-r from-pink-500 to-orange-500 text-white px-3 py-1 rounded-full font-medium">
-          Brand Guide
-        </span>
-      </nav>
-
+    <div>
       <div className="max-w-4xl mx-auto px-8 py-10">
         {!guide ? (
           <div>
