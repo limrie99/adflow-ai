@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { sendAdReadyForReview } from '@/lib/email'
+import { adminAdPatchSchema, adminAdCreateSchema } from '@/lib/validation'
 
 function getSupabaseAdmin() {
   return createClient(
@@ -79,11 +81,12 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { client_id, title, platform, ad_copy, targeting, budget_daily, status, scheduled_for } = body
-
-  if (!client_id || !title) {
-    return NextResponse.json({ error: 'client_id and title are required' }, { status: 400 })
+  const parsed = adminAdCreateSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
+
+  const { client_id, title, platform, ad_copy, targeting, budget_daily, status, scheduled_for } = parsed.data
 
   const admin = getSupabaseAdmin()
 
@@ -105,11 +108,11 @@ export async function POST(req: NextRequest) {
       client_id,
       admin_user_id: user.id,
       title,
-      platform: platform || 'meta',
-      ad_copy: ad_copy || {},
-      targeting: targeting || {},
+      platform,
+      ad_copy,
+      targeting,
       budget_daily: budget_daily || null,
-      status: status || 'draft',
+      status,
       scheduled_for: scheduled_for || null,
     })
     .select()
@@ -130,14 +133,15 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { id, ...updates } = body
-
-  if (!id) {
-    return NextResponse.json({ error: 'Ad ID is required' }, { status: 400 })
+  const parsed = adminAdPatchSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
+  const { id, ...validatedUpdates } = parsed.data
+
   // Add updated_at
-  updates.updated_at = new Date().toISOString()
+  const updates = { ...validatedUpdates, updated_at: new Date().toISOString() }
 
   const admin = getSupabaseAdmin()
   const { data: ad, error } = await admin
@@ -150,6 +154,24 @@ export async function PATCH(req: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // Send email notification when ad is sent for approval
+  if (updates.status === 'pending_approval' && ad) {
+    const { data: client } = await admin
+      .from('agency_clients')
+      .select('contact_email, business_name')
+      .eq('id', ad.client_id)
+      .single()
+
+    if (client?.contact_email) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      sendAdReadyForReview(
+        client.contact_email,
+        ad.title,
+        `${appUrl}/client/ads/${ad.id}`
+      ).catch(() => {}) // fire-and-forget
+    }
   }
 
   return NextResponse.json({ ad })

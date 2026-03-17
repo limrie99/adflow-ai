@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { sendWelcomeEmail } from '@/lib/email'
+import { inviteSchema } from '@/lib/validation'
 
 function getSupabaseAdmin() {
   return createClient(
@@ -35,11 +37,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { client_id, email, password } = await req.json()
-
-  if (!client_id || !email || !password) {
-    return NextResponse.json({ error: 'client_id, email, and password are required' }, { status: 400 })
+  const body = await req.json()
+  const parsed = inviteSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
+
+  const { client_id, email, password } = parsed.data
 
   // Verify the client belongs to this admin
   const { data: client } = await admin
@@ -84,6 +88,10 @@ export async function POST(req: NextRequest) {
     await admin
       .from('user_credits')
       .upsert({ user_id: newUser.user.id, credits: 0 })
+
+    // Send welcome email with credentials
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    sendWelcomeEmail(email, password, `${appUrl}/login`).catch(() => {})
 
     return NextResponse.json({
       success: true,

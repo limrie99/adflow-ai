@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { sendAdApproved, sendAdRejected } from '@/lib/email'
+import { clientAdPatchSchema } from '@/lib/validation'
 
 function getSupabaseAdmin() {
   return createClient(
@@ -60,16 +62,12 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { id, status, client_feedback, approved_at, rejected_at } = body
-
-  if (!id) {
-    return NextResponse.json({ error: 'Ad ID is required' }, { status: 400 })
+  const parsed = clientAdPatchSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
-  // Only allow approve/reject from client
-  if (status && !['approved', 'rejected'].includes(status)) {
-    return NextResponse.json({ error: 'Clients can only approve or reject ads' }, { status: 400 })
-  }
+  const { id, status, client_feedback, approved_at, rejected_at } = parsed.data
 
   const admin = getSupabaseAdmin()
 
@@ -100,6 +98,30 @@ export async function PATCH(req: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // Notify admin when client approves/rejects
+  if (ad && status) {
+    const { data: clientInfo } = await admin
+      .from('agency_clients')
+      .select('business_name, admin_user_id')
+      .eq('id', clientRecord.id)
+      .single()
+
+    if (clientInfo) {
+      // Get admin's email
+      const { data: { user: adminUser } } = await admin.auth.admin.getUserById(clientInfo.admin_user_id)
+      const adminEmail = adminUser?.email
+
+      if (adminEmail) {
+        const clientName = clientInfo.business_name || 'Client'
+        if (status === 'approved') {
+          sendAdApproved(adminEmail, clientName, ad.title).catch(() => {})
+        } else if (status === 'rejected') {
+          sendAdRejected(adminEmail, clientName, ad.title, ad.client_feedback || '').catch(() => {})
+        }
+      }
+    }
   }
 
   return NextResponse.json({ ad })
