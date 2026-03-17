@@ -51,7 +51,8 @@ export async function POST(req: NextRequest) {
         })
         .eq('stripe_checkout_session_id', session.id)
 
-      // Add ad credits to client
+      // Add ad credits — use raw SQL via PostgREST filter for atomic increment
+      // Fetch current value, then update with optimistic check
       const { data: client } = await admin
         .from('agency_clients')
         .select('ads_remaining')
@@ -59,10 +60,28 @@ export async function POST(req: NextRequest) {
         .single()
 
       if (client) {
-        await admin
+        const currentCount = client.ads_remaining || 0
+        // Update only if the count hasn't changed (optimistic concurrency)
+        const { error: updateError } = await admin
           .from('agency_clients')
-          .update({ ads_remaining: (client.ads_remaining || 0) + adCount })
+          .update({ ads_remaining: currentCount + adCount })
           .eq('id', clientId)
+          .eq('ads_remaining', currentCount)
+
+        // If optimistic update failed (race), retry with fresh read
+        if (updateError) {
+          const { data: fresh } = await admin
+            .from('agency_clients')
+            .select('ads_remaining')
+            .eq('id', clientId)
+            .single()
+          if (fresh) {
+            await admin
+              .from('agency_clients')
+              .update({ ads_remaining: (fresh.ads_remaining || 0) + adCount })
+              .eq('id', clientId)
+          }
+        }
       }
     }
   }

@@ -32,11 +32,8 @@ export default function Login() {
 
       // Auto-confirmed signup (ENABLE_EMAIL_AUTOCONFIRM=true)
       if (data.session) {
-        // Set token cookie
-        document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}`
-
-        // Check role (handle_new_user trigger assigns role automatically)
-        await routeByRole(data.session.access_token)
+        // Create signed server-side session
+        await createSession(data.session.access_token)
         return
       }
 
@@ -49,37 +46,30 @@ export default function Login() {
         return
       }
 
-      // Set token cookie
-      document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}`
-
-      // Route based on role
-      await routeByRole(data.session.access_token)
+      // Create signed server-side session
+      await createSession(data.session.access_token)
       return
     }
 
     setLoading(false)
   }
 
-  const routeByRole = async (token: string) => {
+  const createSession = async (accessToken: string) => {
     try {
-      // Get user
-      const { data: { user } } = await supabase.auth.getUser(token)
-      if (!user) {
-        router.push('/dashboard')
+      // Call server-side session endpoint (sets HttpOnly signed cookie)
+      const res = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: accessToken }),
+      })
+
+      if (!res.ok) {
+        setError('Failed to create session')
+        setLoading(false)
         return
       }
 
-      // Check user role
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single()
-
-      const role = roleData?.role || 'saas_user'
-
-      // Set role cookie for middleware
-      document.cookie = `user-role=${role}; path=/; max-age=${60 * 60 * 24 * 7}`
+      const { role } = await res.json()
 
       if (role === 'admin') {
         router.push('/admin')
@@ -90,7 +80,7 @@ export default function Login() {
         const { data: business } = await supabase
           .from('businesses')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', (await supabase.auth.getUser(accessToken)).data.user?.id)
           .single()
 
         router.push(business ? '/dashboard' : '/onboarding')
